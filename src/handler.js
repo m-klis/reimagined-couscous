@@ -1,5 +1,5 @@
 const { nanoid } = require('nanoid')
-const books = require('./books')
+const booksData = require('./books')
 
 const addBookHandler = (request, h) => {
   const {
@@ -53,9 +53,9 @@ const addBookHandler = (request, h) => {
     updatedAt
   }
 
-  books.push(newBook)
+  booksData.push(newBook)
 
-  const isSuccess = books.filter((book) => book.id === id).length > 0
+  const isSuccess = booksData.filter((book) => book.id === id).length > 0
 
   if (isSuccess) {
     const response = h.response({
@@ -80,13 +80,41 @@ const addBookHandler = (request, h) => {
 }
 
 const getAllBooksHandler = (request, h) => {
+  const { reading, finished, name } = request.query
   const resBooks = []
+  const tempBooks = booksData.slice()
 
-  for (const book of books) {
+  //   console.log(`BEGIN : ${JSON.stringify(tempBooks)}`)
+
+  if (reading === '1' || reading === '0') {
+    const isReading = reading === '1'
+    const temp = tempBooks.filter((book) => book.reading === isReading)
+    tempBooks.splice(0, tempBooks.length, ...temp)
+  }
+
+  //   console.log(`AFTER READING : ${JSON.stringify(tempBooks)}`)
+
+  if (finished === '1' || finished === '0') {
+    const isFinished = finished === '1'
+    const temp = tempBooks.filter((book) => book.finished === isFinished)
+    tempBooks.splice(0, tempBooks.length, ...temp)
+  }
+
+  //   console.log(`AFTER FINISHED : ${JSON.stringify(tempBooks)}`)
+
+  if (typeof name === 'string') {
+    const queryName = name.toLowerCase()
+    const temp = tempBooks.filter((book) => book.name.toLowerCase().includes(queryName))
+    tempBooks.splice(0, tempBooks.length, ...temp)
+  }
+
+  //   console.log(`AFTER FILTER NAME : ${JSON.stringify(tempBooks)}`)
+
+  for (let i = 0; i < tempBooks.length; i++) {
     resBooks.push({
-      id: book.id,
-      name: book.name,
-      publisher: book.publisher
+      id: tempBooks[i].id,
+      name: tempBooks[i].name,
+      publisher: tempBooks[i].publisher
     })
   }
 
@@ -103,7 +131,7 @@ const getAllBooksHandler = (request, h) => {
 const getBookByIdHandler = (request, h) => {
   const { bookId } = request.params
 
-  const book = books.filter((book) => book.id === bookId)[0]
+  const book = booksData.filter((book) => book.id === bookId)[0]
 
   if (book !== undefined) {
     return {
@@ -137,7 +165,7 @@ const editBookByIdHandler = (request, h) => {
   } = request.payload
   const updatedAt = new Date().toISOString()
 
-  const index = books.findIndex((book) => book.id === bookId)
+  const index = booksData.findIndex((book) => book.id === bookId)
 
   if (name === undefined || name === '') {
     const response = h.response({
@@ -158,8 +186,8 @@ const editBookByIdHandler = (request, h) => {
   }
 
   if (index !== -1) {
-    books[index] = {
-      ...books[index],
+    booksData[index] = {
+      ...booksData[index],
       name,
       year,
       author,
@@ -191,10 +219,10 @@ const editBookByIdHandler = (request, h) => {
 const deleteBookByIdHandler = (request, h) => {
   const { bookId } = request.params
 
-  const index = books.findIndex((book) => book.id === bookId)
+  const index = booksData.findIndex((book) => book.id === bookId)
 
   if (index !== -1) {
-    books.splice(index, 1)
+    booksData.splice(index, 1)
     const response = h.response({
       status: 'success',
       message: 'Buku berhasil dihapus'
